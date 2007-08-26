@@ -1,0 +1,16 @@
+#!/usr/bin/perl
+
+use strict;
+use English;
+
+(@ARGV == 1) or die "Usage: openpause filename\n";
+
+my $filename = shift;
+
+open(FILE, '<', $filename) or die "$filename: $ERRNO\n";
+
+unlink($filename) or warn "unlink: $filename: $ERRNO\n";
+
+print "/proc/$$/fd/", fileno FILE, "\n";
+
+sleep;

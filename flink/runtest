@@ -1,0 +1,74 @@
+#!/usr/bin/perl
+
+# $HeadURL$
+# $Id$
+
+use strict;
+use English;
+use File::Temp qw(tempfile mktemp);
+use File::Basename;
+use POSIX qw(WIFEXITED WEXITSTATUS WIFSIGNALED);
+
+my ($filehandle, $filename);
+
+if (@ARGV == 0)
+{
+  ($filehandle, $filename) = tempfile();
+}
+elsif (@ARGV == 1)
+{
+  $filename = shift;
+  $filehandle = open $filename or die "$filename: $ERRNO\n";
+}
+else
+{
+  die "Usage: runtest [filename]\n";
+}
+
+print "$filename opened using fd ", fileno $filehandle, "\n";
+
+my $dirname = (fileparse($filename))[1];
+
+print "dirname: \"$dirname\"\n";
+
+my $newname = mktemp($dirname . "flinktestXXXXXXXX");
+
+print "newname: $newname\n";
+
+$ERRNO = 0;
+my $testdir = (fileparse($PROGRAM_NAME))[1];
+my $oldname = "/proc/$$/fd/" . fileno $filehandle;
+my $status = system("$testdir/flinkapp $oldname $newname");
+
+if ($status)
+{
+  if ($status == -1)
+  {
+    die "flinktest execution failed: $ERRNO";
+  }
+  else
+  {
+    print STDERR "flinktest failed:";
+    WIFEXITED($?) and print STDERR " exit status: ", WEXITSTATUS($?);
+    WIFSIGNALED($?) and print STDERR " received signal: ", WTERMSIG($?);
+    print STDERR "\n";
+    exit 1;
+  }
+}
+
+system "stat --dereference $oldname $newname";
+print "-" x 70, "\n";
+
+my (@oldstat) = stat $oldname;
+my (@newstat) = stat $newname;
+
+if ($oldstat[0] != $newstat[0] or $oldstat[1] != $newstat[1])
+{
+  die "Failed, $oldname and $newname are not the same file\n";
+}
+else
+{
+  print "ok\n";
+}
+
+exit 0;

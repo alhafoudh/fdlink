@@ -1,0 +1,19 @@
+$HeadURL$
+$Id$
+
+This Linux 2.6.* kernel module adds /dev/flink device which accepts a ioctl
+with an open file descriptor and a non-existing path name and will link
+the given name to the passed file descriptor IF the name doesn't exist AND
+the file pointed to by the file descriptor resides on the same file system
+as the given path.
+
+Pay attention not to confuse that the ioctl(2) call is done on the fd of
+/dev/flink but the passed file descriptor is in a field of the struct
+pointed to by "arg".
+
+To install run "make" and "sudo insmod flink_dev.ko"
+
+To test run "runtest".
+
+See source of flinkapp (flinkapp.c) for an example for using the flink()
+function call, or just use the application from the comand line.

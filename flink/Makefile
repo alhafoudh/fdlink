@@ -1,14 +1,19 @@
+# $HeadURL$
+# $Id$
+
 obj-m := flink_dev.o 
 
 KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
+CFLAGS += -g
+LDFLAGS += -g
 
-all:	default flinktest
+all:	default flinkapp
 default:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
-flinktest:	flinktest.o flink.o
+flinkapp:	flinkapp.o flink.o
 
 clean:
-	$(RM) -fr flinktest *.o *.ko flink_dev.mod.* .*.cmd Module.symvers \
+	$(RM) -fr flinkapp *.o *.ko flink_dev.mod.* .*.cmd Module.symvers \
 	  .tmp_versions

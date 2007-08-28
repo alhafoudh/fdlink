@@ -1,7 +1,10 @@
+/*
+ * $HeadURL$
+ * $Id$
+ */
 #include <fcntl.h>
 #include <errno.h>
 
-#include <stdio.h> // DEBUG
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -17,16 +20,15 @@ int flink(unsigned int fd, const char *path, unsigned int flags)
 
   if (flinkfd < 0)
   {
-    errno = EACCES;
+    errno = ENODEV;
     return -1;
   }
 
-  printf("opened /dev/flink\n");
-  struct flink flink;
+  struct flink data;
 
-  flink.fd = fd;
-  flink.path = path;
-  flink.flags = 0;
+  data.fd = fd;
+  data.path = path;
+  data.flags = 0;
 
-  return ioctl(flinkfd, 0, &flink);
+  return ioctl(flinkfd, 0, &data);
 }

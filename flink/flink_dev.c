@@ -3,7 +3,7 @@
  *
  * $Id$
  *
- * flink kernel module
+ * flink_dev kernel module
  */
 
 #include <linux/file.h>
@@ -44,6 +44,7 @@ static int flink_ioctl(struct inode *inode, struct file *file,
 	error = path_lookup(to, LOOKUP_PARENT, &nd);
 	if (error)
 		goto release_f;
+
 	error = -EXDEV;
 	if (f->f_vfsmnt != nd.mnt)
 		goto release_nd;
@@ -65,29 +66,14 @@ exit:
 	return error;
 }
 
-/*
- * The only file operation we care about is ioctl.
- */
-
 static const struct file_operations flink_fops = {
 	.owner		= THIS_MODULE,
 	.ioctl		= flink_ioctl,
 };
 
 static struct miscdevice flink_dev = {
-	/*
-	 * We don't care what minor number we end up with, so tell the
-	 * kernel to just pick one.
-	 */
 	MISC_DYNAMIC_MINOR,
-	/*
-	 * Name ourselves /dev/flink.
-	 */
 	"flink",
-	/*
-	 * What functions to call when a program performs file
-	 * operations on the device.
-	 */
 	&flink_fops
 };
 
@@ -95,12 +81,6 @@ static int __init
 flink_init(void)
 {
 	int ret;
-
-	/*
-	 * Create the "flink" device in the /sys/class/misc directory.
-	 * Udev will automatically create the /dev/flink device using
-	 * the default rules.
-	 */
 	ret = misc_register(&flink_dev);
 	if (ret)
 		printk(KERN_ERR

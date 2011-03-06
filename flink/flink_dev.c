@@ -46,19 +46,19 @@ static int flink_ioctl(struct inode *inode, struct file *file,
 		goto release_f;
 
 	error = -EXDEV;
-	if (f->f_vfsmnt != nd.mnt)
+	if (f->f_vfsmnt != nd.path.mnt)
 		goto release_nd;
 
 	new_dentry = lookup_create(&nd, 0);
 	error = PTR_ERR(new_dentry);
 	if (!IS_ERR(new_dentry)) {
-		error = vfs_link(old_dentry, nd.dentry->d_inode, new_dentry);
+		error = vfs_link(old_dentry, nd.path.dentry->d_inode, new_dentry);
 		dput(new_dentry);
 	}
-	mutex_unlock(&nd.dentry->d_inode->i_mutex);
+	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
 
 release_nd:
-	path_release(&nd);
+	path_put(&nd.path);
 release_f:
 	fput(f);
 exit:

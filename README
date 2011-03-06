@@ -1,0 +1,1 @@
+Have you ever found yourself in a situation where you removed a precious file which was still open by a program? This kernel module and application will allow you to link that file back into its file system. It could be useful in other situations too.

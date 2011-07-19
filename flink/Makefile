@@ -5,7 +5,7 @@ obj-m := flink_dev.o
 
 KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
-CFLAGS += -g
+EXTRA_CFLAGS += -g
 LDFLAGS += -g
 
 all:	default flinkapp

@@ -12,13 +12,13 @@
 #include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <linux/namei.h>
+#include <linux/proc_fs.h>
 
 #include <asm/uaccess.h>
 
 #include "flink.h"
 
-static int flink_ioctl(struct inode *inode, struct file *file,
-                       unsigned int cmd, unsigned long arg)
+static long flink_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct flink __user *p = (struct flink __user *)arg;
 	struct dentry *old_dentry;
@@ -68,7 +68,7 @@ exit:
 
 static const struct file_operations flink_fops = {
 	.owner		= THIS_MODULE,
-	.ioctl		= flink_ioctl,
+	.unlocked_ioctl		= flink_ioctl,
 };
 
 static struct miscdevice flink_dev = {

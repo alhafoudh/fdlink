@@ -20,6 +20,45 @@
 
 #include "linux/fsnotify.h"
 
+
+#include <linux/security.h>
+
+#ifdef __amd64__
+
+//retrieves the unexported pointer security_ops from a wrapper function that calls security_ops->something by 
+//"disassembling"  the wrapper function and reading the offset to security_ops from the mov operand
+struct security_operations* hack_security_ops_with_func(void *func_address, char* func_name_debug){
+	unsigned char * func = (unsigned char*)func_address;
+	printk(KERN_ERR "FLINK: Disassemble %s: %x %x %x %x %x %x %x", func_name_debug, func[0], func[1], func[2], func[3], func[4], func[5], func[6]);
+	if (func[0] == 0x48 && func[1] == 0x8b && func[2] == 0x05) {//mov rax, QWORD PTR [rip+????], with rip == func+7 and ???? == func[3..6]
+		struct security_operations* result = *(struct security_operations**)(func + 7 + *(unsigned int*)(&func[3]));
+		printk(KERN_ERR "func: %p", func);
+		printk(KERN_ERR "func-step: %p", func + *(unsigned int*)(&func[3]));
+		printk(KERN_ERR "sec_ops: %p", result);
+		printk(KERN_ERR "sec_ops_name: %s", result->name);
+		return result;
+	}
+	return 0;			
+}
+
+
+//retrieves the unexported pointer security_ops by trying two different exported wrapper functions
+struct security_operations* hack_security_ops(void){
+	struct security_operations* guessA = hack_security_ops_with_func(&security_sb_set_mnt_opts, "security_sb_set_mnt_opts");
+	struct security_operations* guessB = hack_security_ops_with_func(&security_sb_copy_data, "security_sb_copy_data");
+	if (guessA == guessB) return guessA;
+	else return 0;
+}
+
+#else
+
+struct security_operations* hack_security_ops(void){ return 0; }
+
+#endif	
+
+static struct security_operations* hacked_security_ops; 
+
+
 //copied from kernel namei.c
 static inline int may_create(struct inode *dir, struct dentry *child)
 {
@@ -56,10 +95,11 @@ static int flink_vfs_link_83e92ba(struct dentry *old_dentry, struct inode *dir, 
 	if (S_ISDIR(inode->i_mode))
 		return -EPERM;
 
-	//-------------------Removed security_inode_link call because it is not exported 
-	//error = security_inode_link(old_dentry, dir, new_dentry);
-	//if (error)
-	//	return error;
+	if (hacked_security_ops && hacked_security_ops->inode_link) {
+		error = hacked_security_ops->inode_link(old_dentry, dir, new_dentry);
+		if (error)
+			return error;
+	}
 
 	mutex_lock(&inode->i_mutex);
 	error = dir->i_op->link(old_dentry, dir, new_dentry);
@@ -77,6 +117,8 @@ static long flink_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct file *f;
 	struct path new_path;
 	struct dentry *new_dentry;
+
+	hacked_security_ops = hack_security_ops();
 
 	char *to = getname(p->path);
 	int error = PTR_ERR(to);
